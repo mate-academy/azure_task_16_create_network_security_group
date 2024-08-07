@@ -56,7 +56,7 @@ To complete the task, you need to perform the following steps:
 
 6. You can keep the resources if you want to — anyway, the virtual network resource itself is [free](https://azure.microsoft.com/en-us/pricing/details/virtual-network/) 
 
-## How to complete tasks in this module 
+## How to Complete Tasks in This Module 
 
 Tasks in this module are relying on 2 PowerShell scripts: 
 
