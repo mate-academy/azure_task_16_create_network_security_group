@@ -113,17 +113,17 @@ if ($webserversNSG.properties.securityRules.Count -eq 1) {
     throw "Unable to verify webservers NSG. Please make sure that it has only 1 rule and try again."
 }
 $webRule = $webserversNSG.properties.securityRules | Where-Object {$_.properties.sourcePortRange -eq "*" -and $_.properties.access -eq "Allow" -and $_.properties.protocol -eq "TCP" -and $_.properties.direction -eq "Inbound" -and $_.properties.destinationPortRanges.Contains("80") -and $_.properties.destinationPortRanges.Contains("443")}
-if ($webRule) { 
+if ($webRule) {
     Write-Output "`u{2705} Checked if webservers NSG allows HTTP traffic - OK."
-} else { 
+} else {
     Write-Output `u{1F914}
     throw "Unable to verify webservers NSG. Please make sure that it has only 1 rule, which allows inbound traffic on TCP ports 80 and 443 from any source port and IP address and try again."
 }
- 
+
 $managementNSG = ( $TemplateObject.resources | Where-Object -Property type -EQ "Microsoft.Network/networkSecurityGroups" | Where-Object {$_.name.Contains("management")})
-if ($managementNSG.properties.securityRules.Count -eq 1) { 
+if ($managementNSG.properties.securityRules.Count -eq 1) {
     Write-Output "`u{2705} Checked if management NSG has only 1 rule - OK."
-} else { 
+} else {
     Write-Output `u{1F914}
     throw "Unable to verify management NSG. Please make sure that it has only 1 rule and try again."
 }
