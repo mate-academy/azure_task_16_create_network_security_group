@@ -24,7 +24,7 @@ $webNsgRuleHttpHttps = New-AzNetworkSecurityRuleConfig -Name "Allow-HTTP-HTTPS" 
   -SourceAddressPrefix "*" `
   -SourcePortRange "*" `
   -DestinationAddressPrefix "*" `
-  -DestinationPortRange "80-443"
+  -DestinationPortRange 80, 443
 
 $webNsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location `
   -Name "$webSubnetName-nsg" -SecurityRules $webNsgRuleHttpHttps
@@ -47,19 +47,8 @@ $mngNsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Loca
 
 Write-Host "Creating dbSubnet network security group..."
 # Write your code for creation of management NSG here ->
-$internalCommRule = New-AzNetworkSecurityRuleConfig -Name "Allow-Internal-Communication" `
-  -Description "Allow traffic within the virtual network" `
-  -Access "Allow" `
-  -Protocol "*" `
-  -Direction "Inbound" `
-  -Priority 200 `
-  -SourceAddressPrefix "VirtualNetwork" `
-  -SourcePortRange "*" `
-  -DestinationAddressPrefix "*" `
-  -DestinationPortRange "*"
-
 $dbNsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location `
-  -Name "$dbSubnetName-nsg" -SecurityRules $internalCommRule
+  -Name "$dbSubnetName-nsg"
 
 Write-Host "Creating a virtual network ..."
 $webSubnet = New-AzVirtualNetworkSubnetConfig -Name $webSubnetName -AddressPrefix $webSubnetIpRange -NetworkSecurityGroup $webNsg
