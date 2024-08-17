@@ -27,7 +27,7 @@ $webNsgRuleHttpHttps = New-AzNetworkSecurityRuleConfig -Name "Allow-HTTP-HTTPS"
   -DestinationPortRange "80,443"
 
 $webNsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location `
-  -Name "$webSubnetName-nsg" -SecurityRules $webNsgRuleHttpHttps
+  -Name $webSubnetName -SecurityRules $webNsgRuleHttpHttps
 
 Write-Host "Creating mngSubnet network security group..."
 $mngNsgRuleSsh = New-AzNetworkSecurityRuleConfig -Name "Allow-SSH"
@@ -42,7 +42,7 @@ $mngNsgRuleSsh = New-AzNetworkSecurityRuleConfig -Name "Allow-SSH"
   -DestinationPortRange "22"
 
 $mngNsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location `
-  -Name "$mngSubnetName-nsg" -SecurityRules $mngNsgRuleSsh
+  -Name $mngSubnetName -SecurityRules $mngNsgRuleSsh
 
 Write-Host "Creating dbSubnet network security group..."
 $dbNsgRuleDb = New-AzNetworkSecurityRuleConfig -Name "Allow-DB" `
@@ -57,7 +57,7 @@ $dbNsgRuleDb = New-AzNetworkSecurityRuleConfig -Name "Allow-DB" `
   -DestinationPortRange "1433,3306"
 
 $dbNsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location `
-  -Name "$dbSubnetName-nsg" -SecurityRules $dbNsgRuleDb
+  -Name $dbSubnetName -SecurityRules $dbNsgRuleDb
 
 Write-Host "Creating a virtual network ..."
 $webSubnet = New-AzVirtualNetworkSubnetConfig -Name $webSubnetName -AddressPrefix $webSubnetIpRange -NetworkSecurityGroup $webNsg
