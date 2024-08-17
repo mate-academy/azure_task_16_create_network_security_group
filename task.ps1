@@ -14,8 +14,8 @@ Write-Host "Creating a resource group $resourceGroupName ..."
 New-AzResourceGroup -Name $resourceGroupName -Location $location
 
 Write-Host "Creating web network security group..."
-$webNsgRuleHttp = New-AzNetworkSecurityRuleConfig -Name "Allow-HTTP" `
-  -Description "Allow HTTP traffic from the Internet" `
+$webNsgRuleHttpHttps = New-AzNetworkSecurityRuleConfig -Name "Allow-HTTP-HTTPS" `
+  -Description "Allow HTTP and HTTPS traffic from the Internet" `
   -Access Allow `
   -Protocol Tcp `
   -Direction Inbound `
@@ -23,21 +23,10 @@ $webNsgRuleHttp = New-AzNetworkSecurityRuleConfig -Name "Allow-HTTP" `
   -SourceAddressPrefix * `
   -SourcePortRange * `
   -DestinationAddressPrefix * `
-  -DestinationPortRange 80
-
-$webNsgRuleHttps = New-AzNetworkSecurityRuleConfig -Name "Allow-HTTPS" `
-  -Description "Allow HTTPS traffic from the Internet" `
-  -Access Allow `
-  -Protocol Tcp `
-  -Direction Inbound `
-  -Priority 110 `
-  -SourceAddressPrefix * `
-  -SourcePortRange * `
-  -DestinationAddressPrefix * `
-  -DestinationPortRange 443
+  -DestinationPortRange 80,443
 
 $webNsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location `
-  -Name "$webSubnetName-nsg" -SecurityRules $webNsgRuleHttp, $webNsgRuleHttps
+  -Name "$webSubnetName-nsg" -SecurityRules $webNsgRuleHttpHttps
 
 Write-Host "Creating mngSubnet network security group..."
 $mngNsgRuleSsh = New-AzNetworkSecurityRuleConfig -Name "Allow-SSH" `
@@ -55,30 +44,9 @@ $mngNsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Loca
   -Name "$mngSubnetName-nsg" -SecurityRules $mngNsgRuleSsh
 
 Write-Host "Creating dbSubnet network security group..."
-$dbNsgRuleSql = New-AzNetworkSecurityRuleConfig -Name "Allow-SQL" `
-  -Description "Allow SQL traffic" `
-  -Access Allow `
-  -Protocol Tcp `
-  -Direction Inbound `
-  -Priority 100 `
-  -SourceAddressPrefix * `
-  -SourcePortRange * `
-  -DestinationAddressPrefix * `
-  -DestinationPortRange 1433
-
-$dbNsgRuleMySql = New-AzNetworkSecurityRuleConfig -Name "Allow-MySQL" `
-  -Description "Allow MySQL traffic" `
-  -Access Allow `
-  -Protocol Tcp `
-  -Direction Inbound `
-  -Priority 110 `
-  -SourceAddressPrefix * `
-  -SourcePortRange * `
-  -DestinationAddressPrefix * `
-  -DestinationPortRange 3306
 
 $dbNsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location `
-  -Name "$dbSubnetName-nsg" -SecurityRules $dbNsgRuleSql, $dbNsgRuleMySql
+  -Name "$dbSubnetName-nsg"
 
 Write-Host "Creating a virtual network ..."
 $webSubnet = New-AzVirtualNetworkSubnetConfig -Name $webSubnetName -AddressPrefix $webSubnetIpRange -NetworkSecurityGroup $webNsg
