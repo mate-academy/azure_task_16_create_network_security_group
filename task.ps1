@@ -15,16 +15,15 @@ Write-Host "Creating a resource group $resourceGroupName ..."
 New-AzResourceGroup -Name $resourceGroupName -Location $location
 
 Write-Host "Creating web network security group..."
-# Write your code for creation of Web NSG here -> 
 $webNsgRuleHttpHttps = New-AzNetworkSecurityRuleConfig -Name "Allow-HTTP-HTTPS"
   -Description "Allow HTTP and HTTPS traffic from the Internet" `
-  -Access "Allow" `
-  -Protocol "Tcp" `
-  -Direction "Inbound" `
+  -Access Allow `
+  -Protocol Tcp `
+  -Direction Inbound `
   -Priority 100 `
-  -SourceAddressPrefix "*" `
-  -SourcePortRange "*" `
-  -DestinationAddressPrefix "*" `
+  -SourceAddressPrefix * `
+  -SourcePortRange * `
+  -DestinationAddressPrefix * `
   -DestinationPortRange 80, 443
 
 $webNsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location `
@@ -34,14 +33,14 @@ Write-Host "Creating mngSubnet network security group..."
 # Write your code for creation of management NSG here -> 
 $mngNsgRuleSsh = New-AzNetworkSecurityRuleConfig -Name "Allow-SSH"
   -Description "Allow SSH traffic from the Internet" `
-  -Access "Allow" `
-  -Protocol "Tcp" `
-  -Direction "Inbound" `
+  -Access Allow `
+  -Protocol Tcp `
+  -Direction Inbound `
   -Priority 100 `
-  -SourceAddressPrefix "*" `
-  -SourcePortRange "*" `
-  -DestinationAddressPrefix "*" `
-  -DestinationPortRange "22"
+  -SourceAddressPrefix * `
+  -SourcePortRange * `
+  -DestinationAddressPrefix * `
+  -DestinationPortRange 22
 
 $mngNsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location `
   -Name "$mngSubnetName-nsg" -SecurityRules $mngNsgRuleSsh
