@@ -34,7 +34,7 @@ If you are a Windows user, before running this command, please also run the foll
 
 ## Requirements
 
-In this task, you will need to plan and create network security groups for the virtual network from the [previous task](https://github.com/mate-academy/azure_task_15_create_virtual_network): 
+In this task, you will need to plan and create network security groups for the virtual network from the [previous task](https://github.com/mate-academy/azure_task_15_create_virtual_network):
 
 - each subnet (`webservers`, `database`, `management`) should have its own NSG, with the same name as the subnet;
 - all subnets should allow traffic from other subnets within the virtual network;
