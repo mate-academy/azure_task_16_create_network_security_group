@@ -34,19 +34,19 @@ If you are a Windows user, before running this command, please also run the foll
 
 ## Requirements
 
-In this task, you will need to plan and create network security groups for the virtual network from the [previous task](https://github.com/mate-academy/azure_task_15_create_virtual_network): 
+In this task, you will need to plan and create network security groups for the virtual network from the [previous task](https://github.com/mate-academy/azure_task_15_create_virtual_network):
 
 - each subnet (`webservers`, `database`, `management`) should have its own NSG, with the same name as the subnet;
 - all subnets should allow traffic from other subnets within the virtual network;
 - `webservers` subnet should accept only HTTP and HTTPS traffic from the Internet;
-- `management` subnet should accept only SSH traffic from the Internet; 
+- `management` subnet should accept only SSH traffic from the Internet;
 - `database` subnet should not accept any traffic from the Internet at all.
 
-To complete the task, you need to perform the following steps: 
+To complete the task, you need to perform the following steps:
 
 1. Update the PowerShell script `task.ps1` to add deployment of the required Network Security Groups and subnets using the PowerShell module for Azure. To achieve that, use comandlets [New-AzNetworkSecurityGroup and New-AzNetworkSecurityRuleConfig](https://learn.microsoft.com/en-us/powershell/module/az.network/new-aznetworksecuritygroup?view=azps-12.1.0#example-2-create-a-detailed-network-security-group). File `task.ps1` already contains code for deployment of the virtual network and subnets — make sure to update it so NSGs will be attached to the subnets.  
 
-2. Run the updated `task.ps1` script to create a cloud infrastructure for the web app. 
+2. Run the updated `task.ps1` script to create a cloud infrastructure for the web app.
 
 3. Run artifacts generation script `scripts/generate-artifacts.ps1`.
 
