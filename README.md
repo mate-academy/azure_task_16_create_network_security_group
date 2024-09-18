@@ -80,3 +80,28 @@ Here is how to complete tasks in this module:
 Pro tip: if you are stuck with any of the implementation steps — run `scripts/generate-artifacts.ps1` and `scripts/validate-artifacts.ps1`. The validation script might give you a hint on what you should do.  
 
 
+## SOLUTION
+
+### NSG Rules:
+
+1. [VNET] 
+
+    We do not need to specifically create a rule for allowing all traffic withing Virtual Network
+    since it would dublicate one of the default rules of any NSG: `AllowVNetInBound`
+2. [webservers] 
+
+    Since default NSG rule `DenyAllInbound` blocks all inbound traffic - we need to only create 1 rule which
+    allows - all inbound - tcp traffic - from internet - from ports 80 (HTTP), 443 (HTTPS)
+3. [management] 
+
+    Since default NSG rule `DenyAllInbound` blocks all inbound traffic - we need to only create 1 rule which
+    allows - all inbound - tcp traffic - from internet - from port 22 (SSH)
+4. [database] 
+
+    Since default NSG rule `DenyAllInbound` blocks all inbound traffic - we do not add any extra rules to NSG
+
+### Subnets NSG association:
+
+To associate created NSG's with our subnets we need to:
+1. Get the save created NSG as an object to a variable
+2. Set defined variable as `-NetworkSecurityGroup` parameter to our subnets
