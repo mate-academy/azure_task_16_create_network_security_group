@@ -14,14 +14,45 @@ $mngSubnetIpRange = "10.20.30.128/26"
 Write-Host "Creating a resource group $resourceGroupName ..."
 New-AzResourceGroup -Name $resourceGroupName -Location $location
 
+# Create NSGs
 Write-Host "Creating web network security group..."
-# Write your code for creation of Web NSG here -> 
+$webNSG = New-AzNetworkSecurityGroup -Name $webSubnetName -ResourceGroupName $resourceGroupName -Location $location
 
-Write-Host "Creating mngSubnet network security group..."
-# Write your code for creation of management NSG here -> 
+Write-Host "Creating management network security group..."
+$mngNSG = New-AzNetworkSecurityGroup -Name $mngSubnetName -ResourceGroupName $resourceGroupName -Location $location
 
-Write-Host "Creating dbSubnet network security group..."
-# Write your code for creation of management NSG here -> 
+Write-Host "Creating database network security group..."
+$dbNSG = New-AzNetworkSecurityGroup -Name $dbSubnetName -ResourceGroupName $resourceGroupName -Location $location
+
+# Allow intra-VNet traffic on all NSGs
+foreach ($nsg in @($webNSG, $mngNSG, $dbNSG)) {
+    Add-AzNetworkSecurityRuleConfig -NetworkSecurityGroup $nsg `
+        -Name "Allow-VNet-Inbound" -Priority 100 `
+        -Direction Inbound -Access Allow -Protocol * -SourceAddressPrefix VirtualNetwork `
+        -SourcePortRange * -DestinationAddressPrefix VirtualNetwork -DestinationPortRange *
+
+    # Apply updates
+    Set-AzNetworkSecurityGroup -NetworkSecurityGroup $nsg
+}
+
+# Add Internet-facing rules
+# Web: Allow HTTP/HTTPS from Internet
+Add-AzNetworkSecurityRuleConfig -NetworkSecurityGroup $webNSG `
+    -Name "Allow-HTTP" -Priority 200 -Direction Inbound -Access Allow -Protocol Tcp `
+    -SourceAddressPrefix Internet -SourcePortRange * `
+    -DestinationAddressPrefix * -DestinationPortRange 80
+Add-AzNetworkSecurityRuleConfig -NetworkSecurityGroup $webNSG `
+    -Name "Allow-HTTPS" -Priority 210 -Direction Inbound -Access Allow -Protocol Tcp `
+    -SourceAddressPrefix Internet -SourcePortRange * `
+    -DestinationAddressPrefix * -DestinationPortRange 443
+Set-AzNetworkSecurityGroup -NetworkSecurityGroup $webNSG
+
+# Management: Allow SSH only from Internet
+Add-AzNetworkSecurityRuleConfig -NetworkSecurityGroup $mngNSG `
+    -Name "Allow-SSH" -Priority 200 -Direction Inbound -Access Allow -Protocol Tcp `
+    -SourceAddressPrefix Internet -SourcePortRange * `
+    -DestinationAddressPrefix * -DestinationPortRange 22
+Set-AzNetworkSecurityGroup -NetworkSecurityGroup $mngNSG
 
 Write-Host "Creating a virtual network ..."
 $webSubnet = New-AzVirtualNetworkSubnetConfig -Name $webSubnetName -AddressPrefix $webSubnetIpRange
