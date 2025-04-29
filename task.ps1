@@ -35,7 +35,6 @@ foreach ($nsg in @($webNSG, $mngNSG, $dbNSG)) {
     Set-AzNetworkSecurityGroup -NetworkSecurityGroup $nsg
 }
 
-# Add Internet-facing rules
 # Web: Allow HTTP/HTTPS from Internet
 Add-AzNetworkSecurityRuleConfig -NetworkSecurityGroup $webNSG `
     -Name "Allow-HTTP" -Priority 200 -Direction Inbound -Access Allow -Protocol Tcp `
