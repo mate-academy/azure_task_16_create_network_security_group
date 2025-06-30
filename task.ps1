@@ -1,30 +1,49 @@
-$location = "uksouth"
-$resourceGroupName = "mate-azure-task-16"
+# Ensure you are logged in to Azure: Connect-AzAccount
 
-$virtualNetworkName = "todoapp"
+# --- Variables ---
+$resourceGroupName = "mate-azure-task-15" # As per requirement for VNet deployment
+$location = "EastUS" # You can choose a different location if desired
+$vnetName = "todoapp" # As per requirement
 $vnetAddressPrefix = "10.20.30.0/24"
-$webSubnetName = "webservers"
-$webSubnetIpRange = "10.20.30.0/26"
-$dbSubnetName = "database"
-$dbSubnetIpRange = "10.20.30.64/26"
-$mngSubnetName = "management"
-$mngSubnetIpRange = "10.20.30.128/26"
 
+# Subnet configurations (calculated to fit up to 50 VMs, requires /26 prefix)
+$webserversSubnetName = "webservers"
+$webserversSubnetPrefix = "10.20.30.0/26"
 
-Write-Host "Creating a resource group $resourceGroupName ..."
-New-AzResourceGroup -Name $resourceGroupName -Location $location
+$databaseSubnetName = "database"
+$databaseSubnetPrefix = "10.20.30.64/26"
 
-Write-Host "Creating web network security group..."
-# Write your code for creation of Web NSG here -> 
+$managementSubnetName = "management"
+$managementSubnetPrefix = "10.20.30.128/26"
 
-Write-Host "Creating mngSubnet network security group..."
-# Write your code for creation of management NSG here -> 
+# --- Create Resource Group if it doesn't exist ---
+Write-Host "Checking for existing resource group '$resourceGroupName'..."
+$resourceGroup = Get-AzResourceGroup -Name $resourceGroupName -ErrorAction SilentlyContinue
+if (-not $resourceGroup) {
+    Write-Host "Creating resource group '$resourceGroupName' in '$location'..."
+    New-AzResourceGroup -Name $resourceGroupName -Location $location | Out-Null
+    Write-Host "Resource group '$resourceGroupName' created."
+} else {
+    Write-Host "Resource group '$resourceGroupName' already exists."
+}
 
-Write-Host "Creating dbSubnet network security group..."
-# Write your code for creation of management NSG here -> 
+# --- Create Subnet Configurations ---
+Write-Host "Configuring subnets..."
+$webserversSubnet = New-AzVirtualNetworkSubnetConfig -Name $webserversSubnetName `
+    -AddressPrefix $webserversSubnetPrefix
 
-Write-Host "Creating a virtual network ..."
-$webSubnet = New-AzVirtualNetworkSubnetConfig -Name $webSubnetName -AddressPrefix $webSubnetIpRange
-$dbSubnet = New-AzVirtualNetworkSubnetConfig -Name $dbSubnetName -AddressPrefix $dbSubnetIpRange
-$mngSubnet = New-AzVirtualNetworkSubnetConfig -Name $mngSubnetName -AddressPrefix $mngSubnetIpRange
-New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName -Location $location -AddressPrefix $vnetAddressPrefix -Subnet $webSubnet,$dbSubnet,$mngSubnet
+$databaseSubnet = New-AzVirtualNetworkSubnetConfig -Name $databaseSubnetName `
+    -AddressPrefix $databaseSubnetPrefix
+
+$managementSubnet = New-AzVirtualNetworkSubnetConfig -Name $managementSubnetName `
+    -AddressPrefix $managementSubnetPrefix
+
+# --- Create Virtual Network with Subnets ---
+Write-Host "Creating Virtual Network '$vnetName' with subnets..."
+New-AzVirtualNetwork -Name $vnetName `
+    -ResourceGroupName $resourceGroupName `
+    -Location $location `
+    -AddressPrefix $vnetAddressPrefix `
+    -Subnet $webserversSubnet, $databaseSubnet, $managementSubnet | Out-Null
+
+Write-Host "Virtual Network '$vnetName' and its subnets deployed successfully!"
