@@ -15,16 +15,57 @@ Write-Host "Creating a resource group $resourceGroupName ..."
 New-AzResourceGroup -Name $resourceGroupName -Location $location
 
 Write-Host "Creating web network security group..."
-# Write your code for creation of Web NSG here -> 
+$AllowHTTPandHTTPS = New-AzNetworkSecurityRuleConfig `
+  -Name "http-rule" `
+  -Description "Allow HTTP and HTTPS traffic from the Internet" `
+  -Access Allow `
+  -Protocol Tcp `
+  -Direction Inbound `
+  -Priority 200 `
+  -SourceAddressPrefix  Internet `
+  -SourcePortRange * `
+  -DestinationAddressPrefix * `
+  -DestinationPortRange 80, 443
+
+$webserversNSG =  New-AzNetworkSecurityGroup `
+  -Name $webSubnetName  `
+  -ResourceGroupName $resourceGroupName  `
+  -Location  $location `
+  -SecurityRules $AllowHTTPandHTTPS
 
 Write-Host "Creating mngSubnet network security group..."
-# Write your code for creation of management NSG here -> 
+$AllowSSH = New-AzNetworkSecurityRuleConfig `
+  -Name "ssh-rule" `
+  -Description "Allow only SSH traffic from the Internet" `
+  -Access Allow `
+  -Protocol Tcp `
+  -Direction Inbound `
+  -Priority 200 `
+  -SourceAddressPrefix  Internet `
+  -SourcePortRange * `
+  -DestinationAddressPrefix * `
+  -DestinationPortRange 22
+
+$ManagementNSG =  New-AzNetworkSecurityGroup `
+  -Name $mngSubnetName  `
+  -ResourceGroupName $resourceGroupName  `
+  -Location  $location `
+  -SecurityRules $AllowSSH
 
 Write-Host "Creating dbSubnet network security group..."
-# Write your code for creation of management NSG here -> 
+
+$DataBaseNSG =  New-AzNetworkSecurityGroup `
+  -Name $dbSubnetName  `
+  -ResourceGroupName $resourceGroupName  `
+  -Location  $location
 
 Write-Host "Creating a virtual network ..."
-$webSubnet = New-AzVirtualNetworkSubnetConfig -Name $webSubnetName -AddressPrefix $webSubnetIpRange
-$dbSubnet = New-AzVirtualNetworkSubnetConfig -Name $dbSubnetName -AddressPrefix $dbSubnetIpRange
-$mngSubnet = New-AzVirtualNetworkSubnetConfig -Name $mngSubnetName -AddressPrefix $mngSubnetIpRange
-New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName -Location $location -AddressPrefix $vnetAddressPrefix -Subnet $webSubnet,$dbSubnet,$mngSubnet
+$webSubnet = New-AzVirtualNetworkSubnetConfig -Name $webSubnetName -AddressPrefix $webSubnetIpRange -NetworkSecurityGroup $webserversNSG
+$dbSubnet = New-AzVirtualNetworkSubnetConfig -Name $dbSubnetName -AddressPrefix $dbSubnetIpRange -NetworkSecurityGroup $DataBaseNSG
+$mngSubnet = New-AzVirtualNetworkSubnetConfig -Name $mngSubnetName -AddressPrefix $mngSubnetIpRange -NetworkSecurityGroup $ManagementNSG
+New-AzVirtualNetwork `
+  -Name $virtualNetworkName `
+  -ResourceGroupName $resourceGroupName `
+  -Location $location `
+  -AddressPrefix $vnetAddressPrefix `
+  -Subnet $webSubnet, $dbSubnet, $mngSubnet
