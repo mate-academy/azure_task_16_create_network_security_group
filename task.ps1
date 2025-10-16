@@ -1,107 +1,162 @@
-$location = "uksouth"
-$resourceGroupName = "mate-azure-task-16"
+# Azure Network Security Groups Deployment Script
+# This script creates VNet and NSGs for the task
+
+param(
+    [string]$ResourceGroupName = "mate-resources",
+    [string]$Location = "uksouth"
+)
 
 $virtualNetworkName = "todoapp"
 $vnetAddressPrefix = "10.20.30.0/24"
 $webSubnetName = "webservers"
 $webSubnetIpRange = "10.20.30.0/26"
-$dbSubnetName = "database"
+$dbSubnetName = "database" 
 $dbSubnetIpRange = "10.20.30.64/26"
 $mngSubnetName = "management"
 $mngSubnetIpRange = "10.20.30.128/26"
 
-Write-Host "Creating a resource group $resourceGroupName ..."
-New-AzResourceGroup -Name $resourceGroupName -Location $location -Force
+try {
+    Write-Host "=== Azure NSG Deployment ==="
+    
+    # Check Azure connection
+    $context = Get-AzContext -ErrorAction SilentlyContinue
+    if (-not $context) {
+        Write-Host "Authenticating to Azure..."
+        Connect-AzAccount
+    }
+    
+    $context = Get-AzContext
+    Write-Host "Connected to: $($context.Subscription.Name)"
+    Write-Host "Using account: $($context.Account.Id)"
 
-# Clean up existing resources first
-Write-Host "Cleaning up existing resources..."
-Remove-AzVirtualNetwork -ResourceGroupName $resourceGroupName -Name $virtualNetworkName -Force -ErrorAction SilentlyContinue
-Remove-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Name $webSubnetName -Force -ErrorAction SilentlyContinue
-Remove-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Name $dbSubnetName -Force -ErrorAction SilentlyContinue
-Remove-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Name $mngSubnetName -Force -ErrorAction SilentlyContinue
+    # Create or get resource group
+    Write-Host "`n1. Setting up resource group..."
+    $resourceGroup = Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction SilentlyContinue
+    if (-not $resourceGroup) {
+        Write-Host "Creating resource group: $ResourceGroupName"
+        $resourceGroup = New-AzResourceGroup -Name $ResourceGroupName -Location $Location -Force
+    }
+    Write-Host "✅ Resource group: $ResourceGroupName"
 
-# Create Network Security Groups for each subnet
-Write-Host "Creating web network security group..."
-$webNsg = New-AzNetworkSecurityGroup `
-    -ResourceGroupName $resourceGroupName `
-    -Location $location `
-    -Name $webSubnetName
+    # Create or get virtual network
+    Write-Host "`n2. Setting up virtual network..."
+    $virtualNetwork = Get-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
+    if (-not $virtualNetwork) {
+        Write-Host "Creating virtual network: $virtualNetworkName"
+        
+        $webSubnet = New-AzVirtualNetworkSubnetConfig -Name $webSubnetName -AddressPrefix $webSubnetIpRange
+        $dbSubnet = New-AzVirtualNetworkSubnetConfig -Name $dbSubnetName -AddressPrefix $dbSubnetIpRange
+        $mngSubnet = New-AzVirtualNetworkSubnetConfig -Name $mngSubnetName -AddressPrefix $mngSubnetIpRange
+        
+        $virtualNetwork = New-AzVirtualNetwork `
+            -Name $virtualNetworkName `
+            -ResourceGroupName $ResourceGroupName `
+            -Location $Location `
+            -AddressPrefix $vnetAddressPrefix `
+            -Subnet $webSubnet, $dbSubnet, $mngSubnet
+        
+        Write-Host "✅ Virtual network created"
+    } else {
+        Write-Host "✅ Virtual network already exists"
+    }
 
-# Web NSG Rules - ONLY 1 RULE: Allow HTTP/HTTPS from Internet
-# VNet traffic is allowed by default between subnets
-$webRule = New-AzNetworkSecurityRuleConfig `
-    -Name "AllowWeb-Inbound" `
-    -Description "Allow HTTP and HTTPS traffic from Internet" `
-    -Protocol "Tcp" `
-    -SourcePortRange "*" `
-    -DestinationPortRange "80","443" `
-    -SourceAddressPrefix "Internet" `
-    -DestinationAddressPrefix "*" `
-    -Access "Allow" `
-    -Priority 100 `
-    -Direction "Inbound"
+    Write-Host "Subnets: $($virtualNetwork.Subnets.Name -join ', ')"
 
-$webNsg.SecurityRules.Add($webRule)
-$webNsg | Set-AzNetworkSecurityGroup
+    # Create NSGs
+    Write-Host "`n3. Creating Network Security Groups..."
 
-Write-Host "Creating management network security group..."
-$mngNsg = New-AzNetworkSecurityGroup `
-    -ResourceGroupName $resourceGroupName `
-    -Location $location `
-    -Name $mngSubnetName
+    # Web NSG
+    Write-Host "Creating Web NSG..."
+    $webNsg = Get-AzNetworkSecurityGroup -ResourceGroupName $ResourceGroupName -Name $webSubnetName -ErrorAction SilentlyContinue
+    if (-not $webNsg) {
+        $webNsg = New-AzNetworkSecurityGroup -ResourceGroupName $ResourceGroupName -Location $Location -Name $webSubnetName
+    } else {
+        $webNsg.SecurityRules.Clear()
+    }
 
-# Management NSG Rules - ONLY 1 RULE: Allow SSH from Internet
-$mngRule = New-AzNetworkSecurityRuleConfig `
-    -Name "AllowSSH-Inbound" `
-    -Description "Allow SSH traffic from Internet" `
-    -Protocol "Tcp" `
-    -SourcePortRange "*" `
-    -DestinationPortRange "22" `
-    -SourceAddressPrefix "Internet" `
-    -DestinationAddressPrefix "*" `
-    -Access "Allow" `
-    -Priority 100 `
-    -Direction "Inbound"
+    $webRules = @(
+        @{Name="AllowHTTP"; Desc="HTTP from Internet"; Protocol="Tcp"; Port="80"; Source="Internet"},
+        @{Name="AllowHTTPS"; Desc="HTTPS from Internet"; Protocol="Tcp"; Port="443"; Source="Internet"},
+        @{Name="AllowVNet"; Desc="All from VNet"; Protocol="*"; Port="*"; Source="VirtualNetwork"}
+    )
 
-$mngNsg.SecurityRules.Add($mngRule)
-$mngNsg | Set-AzNetworkSecurityGroup
+    $priority = 100
+    foreach ($rule in $webRules) {
+        $secRule = New-AzNetworkSecurityRuleConfig `
+            -Name $rule.Name -Description $rule.Desc -Protocol $rule.Protocol `
+            -SourcePortRange "*" -DestinationPortRange $rule.Port `
+            -SourceAddressPrefix $rule.Source -DestinationAddressPrefix "*" `
+            -Access Allow -Priority $priority -Direction Inbound
+        $webNsg.SecurityRules.Add($secRule)
+        $priority += 10
+    }
+    $webNsg | Set-AzNetworkSecurityGroup
+    Write-Host "✅ Web NSG configured"
 
-Write-Host "Creating database network security group..."
-$dbNsg = New-AzNetworkSecurityGroup `
-    -ResourceGroupName $resourceGroupName `
-    -Location $location `
-    -Name $dbSubnetName
+    # Management NSG
+    Write-Host "Creating Management NSG..."
+    $mngNsg = Get-AzNetworkSecurityGroup -ResourceGroupName $ResourceGroupName -Name $mngSubnetName -ErrorAction SilentlyContinue
+    if (-not $mngNsg) {
+        $mngNsg = New-AzNetworkSecurityGroup -ResourceGroupName $ResourceGroupName -Location $Location -Name $mngSubnetName
+    } else {
+        $mngNsg.SecurityRules.Clear()
+    }
 
-# Database NSG Rules - NO RULES (no Internet traffic allowed)
-# This means only VNet traffic is allowed (default behavior)
-Write-Host "Database NSG created with no rules - blocking all Internet traffic"
+    $mngRules = @(
+        @{Name="AllowSSH"; Desc="SSH from Internet"; Protocol="Tcp"; Port="22"; Source="Internet"},
+        @{Name="AllowVNet"; Desc="All from VNet"; Protocol="*"; Port="*"; Source="VirtualNetwork"}
+    )
 
-Write-Host "Creating a virtual network with NSG associations..."
-$webSubnet = New-AzVirtualNetworkSubnetConfig `
-    -Name $webSubnetName `
-    -AddressPrefix $webSubnetIpRange `
-    -NetworkSecurityGroup $webNsg
+    $priority = 100
+    foreach ($rule in $mngRules) {
+        $secRule = New-AzNetworkSecurityRuleConfig `
+            -Name $rule.Name -Description $rule.Desc -Protocol $rule.Protocol `
+            -SourcePortRange "*" -DestinationPortRange $rule.Port `
+            -SourceAddressPrefix $rule.Source -DestinationAddressPrefix "*" `
+            -Access Allow -Priority $priority -Direction Inbound
+        $mngNsg.SecurityRules.Add($secRule)
+        $priority += 10
+    }
+    $mngNsg | Set-AzNetworkSecurityGroup
+    Write-Host "✅ Management NSG configured"
 
-$dbSubnet = New-AzVirtualNetworkSubnetConfig `
-    -Name $dbSubnetName `
-    -AddressPrefix $dbSubnetIpRange `
-    -NetworkSecurityGroup $dbNsg
+    # Database NSG
+    Write-Host "Creating Database NSG..."
+    $dbNsg = Get-AzNetworkSecurityGroup -ResourceGroupName $ResourceGroupName -Name $dbSubnetName -ErrorAction SilentlyContinue
+    if (-not $dbNsg) {
+        $dbNsg = New-AzNetworkSecurityGroup -ResourceGroupName $ResourceGroupName -Location $Location -Name $dbSubnetName
+    } else {
+        $dbNsg.SecurityRules.Clear()
+    }
 
-$mngSubnet = New-AzVirtualNetworkSubnetConfig `
-    -Name $mngSubnetName `
-    -AddressPrefix $mngSubnetIpRange `
-    -NetworkSecurityGroup $mngNsg
+    $dbRule = New-AzNetworkSecurityRuleConfig `
+        -Name "AllowVNet" -Description "All from VNet" -Protocol "*" `
+        -SourcePortRange "*" -DestinationPortRange "*" `
+        -SourceAddressPrefix "VirtualNetwork" -DestinationAddressPrefix "*" `
+        -Access Allow -Priority 100 -Direction Inbound
+    $dbNsg.SecurityRules.Add($dbRule)
+    $dbNsg | Set-AzNetworkSecurityGroup
+    Write-Host "✅ Database NSG configured"
 
-$virtualNetwork = New-AzVirtualNetwork `
-    -Name $virtualNetworkName `
-    -ResourceGroupName $resourceGroupName `
-    -Location $location `
-    -AddressPrefix $vnetAddressPrefix `
-    -Subnet $webSubnet, $dbSubnet, $mngSubnet
+    # Associate NSGs with subnets
+    Write-Host "`n4. Associating NSGs with subnets..."
+    $vnet = Get-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $ResourceGroupName
 
-Write-Host "Virtual network and NSGs created successfully!"
-Write-Host "NSG Configuration Summary:"
-Write-Host "  - $webSubnetName NSG: 1 rule (HTTP/HTTPS from Internet)"
-Write-Host "  - $dbSubnetName NSG: 0 rules (No Internet traffic)"
-Write-Host "  - $mngSubnetName NSG: 1 rule (SSH from Internet)"
-Write-Host "Note: VNet traffic between subnets is allowed by default"
+    Set-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name $webSubnetName -AddressPrefix $webSubnetIpRange -NetworkSecurityGroup $webNsg
+    Set-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name $dbSubnetName -AddressPrefix $dbSubnetIpRange -NetworkSecurityGroup $dbNsg
+    Set-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name $mngSubnetName -AddressPrefix $mngSubnetIpRange -NetworkSecurityGroup $mngNsg
+
+    $vnet | Set-AzVirtualNetwork
+    Write-Host "✅ NSGs associated with subnets"
+
+    Write-Host "`n🎉 Deployment completed successfully!"
+    Write-Host "📋 Summary:"
+    Write-Host "   - Resource Group: $ResourceGroupName"
+    Write-Host "   - Virtual Network: $virtualNetworkName ($vnetAddressPrefix)"
+    Write-Host "   - Subnets with NSGs: $webSubnetName, $dbSubnetName, $mngSubnetName"
+
+}
+catch {
+    Write-Error "❌ Deployment failed: $($_.Exception.Message)"
+    exit 1
+}
