@@ -28,7 +28,7 @@ $webRule = New-AzNetworkSecurityRuleConfig `
   -Access Allow `
   -Protocol Tcp `
   -Priority 100 `
-  -SourceAddressPrefix "*" `
+  -SourceAddressPrefix "Internet" `
   -SourcePortRange "*" `
   -DestinationAddressPrefix "*" `
   -DestinationPortRange @("80","443")
@@ -49,7 +49,7 @@ $mngRule = New-AzNetworkSecurityRuleConfig `
   -Access Allow `
   -Protocol Tcp `
   -Priority 100 `
-  -SourceAddressPrefix "*" `
+  -SourceAddressPrefix "Internet" `
   -SourcePortRange "*" `
   -DestinationAddressPrefix "*" `
   -DestinationPortRange "22"
