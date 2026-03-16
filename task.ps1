@@ -27,9 +27,6 @@ $mngNsgRule = New-AzNetworkSecurityRuleConfig -Name $mngSubnetName -Description 
 $mngNsg = New-AzNetworkSecurityGroup -Name $mngSubnetName -ResourceGroupName $resourceGroupName -Location $location -SecurityRules $mngNsgRule
 
 Write-Host "Creating dbSubnet network security group..."
-# $dbNsgRule = New-AzNetworkSecurityRuleConfig -Name $dbSubnetName -Description "Allow DB Access" `
-#   -Access Allow -Protocol Tcp -Direction Inbound -Priority 100 -SourceAddressPrefix `
-#   VirtualNetwork -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 5432, 3306
 $dbNsg = New-AzNetworkSecurityGroup -Name $dbSubnetName -ResourceGroupName $resourceGroupName -Location $location
 
 Write-Host "Creating a virtual network ..."
