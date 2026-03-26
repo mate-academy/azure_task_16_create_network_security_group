@@ -27,7 +27,7 @@ $webserverInboundHTTPS = New-AzNetworkSecurityRuleConfig `
     -DestinationPortRange 443,80
 
 $webserverNsg = New-AzNetworkSecurityGroup `
-    -Name "webservers-nsg" `
+    -Name $webSubnetName `
     -ResourceGroupName $resourceGroupName `
     -Location $location `
     -SecurityRules $webserverInboundHTTPS
@@ -46,14 +46,14 @@ $managementInboudSSH = New-AzNetworkSecurityRuleConfig `
     -DestinationPortRange 22
 
 $managementNsg = New-AzNetworkSecurityGroup `
-    -Name "management-nsg" `
+    -Name $mngSubnetName `
     -ResourceGroupName $resourceGroupName `
     -Location $location `
     -SecurityRules $managementInboudSSH
 
 Write-Host "Creating dbSubnet network security group..."
 $dbNsg = New-AzNetworkSecurityGroup `
-    -Name "database-nsg" `
+    -Name $dbSubnetName `
     -ResourceGroupName $resourceGroupName `
     -Location $location `
 
