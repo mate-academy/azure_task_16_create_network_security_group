@@ -16,14 +16,17 @@ New-AzResourceGroup -Name $resourceGroupName -Location $location
 
 Write-Host "Creating web network security group..."
 $webRule = New-AzNetworkSecurityRuleConfig -Name "Allow-HTTP-HTTPS" -Protocol Tcp -Direction Inbound -Priority 100 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange @("80", "443") -Access Allow
-$webNSG = New-AzNetworkSecurityGroup -Name $webSubnetName -ResourceGroupName $resourceGroupName -Location $location -SecurityRules $webRule
+$webVnetRule = New-AzNetworkSecurityRuleConfig -Name "Allow-VNet-Inbound" -Protocol * -Direction Inbound -Priority 200 -SourceAddressPrefix VirtualNetwork -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange * -Access Allow
+$webNSG = New-AzNetworkSecurityGroup -Name $webSubnetName -ResourceGroupName $resourceGroupName -Location $location -SecurityRules $webRule,$webVnetRule
 
 Write-Host "Creating mngSubnet network security group..."
 $mngRule = New-AzNetworkSecurityRuleConfig -Name "Allow-SSH" -Protocol Tcp -Direction Inbound -Priority 100 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22 -Access Allow
-$mngNSG = New-AzNetworkSecurityGroup -Name $mngSubnetName -ResourceGroupName $resourceGroupName -Location $location -SecurityRules $mngRule
+$mngVnetRule = New-AzNetworkSecurityRuleConfig -Name "Allow-VNet-Inbound" -Protocol * -Direction Inbound -Priority 200 -SourceAddressPrefix VirtualNetwork -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange * -Access Allow
+$mngNSG = New-AzNetworkSecurityGroup -Name $mngSubnetName -ResourceGroupName $resourceGroupName -Location $location -SecurityRules $mngRule,$mngVnetRule
 
 Write-Host "Creating dbSubnet network security group..."
-$dbNSG = New-AzNetworkSecurityGroup -Name $dbSubnetName -ResourceGroupName $resourceGroupName -Location $location
+$dbVnetRule = New-AzNetworkSecurityRuleConfig -Name "Allow-VNet-Inbound" -Protocol * -Direction Inbound -Priority 200 -SourceAddressPrefix VirtualNetwork -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange * -Access Allow
+$dbNSG = New-AzNetworkSecurityGroup -Name $dbSubnetName -ResourceGroupName $resourceGroupName -Location $location -SecurityRules $dbVnetRule
 
 Write-Host "Creating a virtual network ..."
 $webSubnet = New-AzVirtualNetworkSubnetConfig -Name $webSubnetName -AddressPrefix $webSubnetIpRange -NetworkSecurityGroup $webNSG
