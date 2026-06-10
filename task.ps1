@@ -15,16 +15,83 @@ Write-Host "Creating a resource group $resourceGroupName ..."
 New-AzResourceGroup -Name $resourceGroupName -Location $location
 
 Write-Host "Creating web network security group..."
-# Write your code for creation of Web NSG here -> 
+$webNsgHttpHttpsRule = New-AzNetworkSecurityRuleConfig `
+	-Name "Allow-Http-Https" `
+	-Description "Allow HTTP and HTTPS from Internet" `
+	-Access Allow `
+	-Protocol Tcp `
+	-Direction Inbound `
+	-Priority 100 `
+	-SourceAddressPrefix "*" `
+	-SourcePortRange "*" `
+	-DestinationAddressPrefix "*" `
+	-DestinationPortRange @("80", "443")
+$webNsgVnetRule = New-AzNetworkSecurityRuleConfig `
+	-Name "Allow-VNet-Inbound" `
+	-Description "Allow traffic from virtual network" `
+	-Access Allow `
+	-Protocol "*" `
+	-Direction Inbound `
+	-Priority 200 `
+	-SourceAddressPrefix $vnetAddressPrefix `
+	-SourcePortRange "*" `
+	-DestinationAddressPrefix "*" `
+	-DestinationPortRange "*"
+$webNsg = New-AzNetworkSecurityGroup `
+	-Name $webSubnetName `
+	-ResourceGroupName $resourceGroupName `
+	-Location $location `
+	-SecurityRules $webNsgHttpHttpsRule,$webNsgVnetRule
 
 Write-Host "Creating mngSubnet network security group..."
-# Write your code for creation of management NSG here -> 
+$mngNsgSshRule = New-AzNetworkSecurityRuleConfig `
+	-Name "Allow-Ssh" `
+	-Description "Allow SSH from Internet" `
+	-Access Allow `
+	-Protocol Tcp `
+	-Direction Inbound `
+	-Priority 100 `
+	-SourceAddressPrefix "*" `
+	-SourcePortRange "*" `
+	-DestinationAddressPrefix "*" `
+	-DestinationPortRange "22"
+$mngNsgVnetRule = New-AzNetworkSecurityRuleConfig `
+	-Name "Allow-VNet-Inbound" `
+	-Description "Allow traffic from virtual network" `
+	-Access Allow `
+	-Protocol "*" `
+	-Direction Inbound `
+	-Priority 200 `
+	-SourceAddressPrefix $vnetAddressPrefix `
+	-SourcePortRange "*" `
+	-DestinationAddressPrefix "*" `
+	-DestinationPortRange "*"
+$mngNsg = New-AzNetworkSecurityGroup `
+	-Name $mngSubnetName `
+	-ResourceGroupName $resourceGroupName `
+	-Location $location `
+	-SecurityRules $mngNsgSshRule,$mngNsgVnetRule
 
 Write-Host "Creating dbSubnet network security group..."
-# Write your code for creation of management NSG here -> 
+$dbNsgVnetRule = New-AzNetworkSecurityRuleConfig `
+	-Name "Allow-VNet-Inbound" `
+	-Description "Allow traffic from virtual network" `
+	-Access Allow `
+	-Protocol "*" `
+	-Direction Inbound `
+	-Priority 200 `
+	-SourceAddressPrefix $vnetAddressPrefix `
+	-SourcePortRange "*" `
+	-DestinationAddressPrefix "*" `
+	-DestinationPortRange "*"
+$dbNsg = New-AzNetworkSecurityGroup `
+	-Name $dbSubnetName `
+	-ResourceGroupName $resourceGroupName `
+	-Location $location `
+	-SecurityRules $dbNsgVnetRule
 
 Write-Host "Creating a virtual network ..."
-$webSubnet = New-AzVirtualNetworkSubnetConfig -Name $webSubnetName -AddressPrefix $webSubnetIpRange
-$dbSubnet = New-AzVirtualNetworkSubnetConfig -Name $dbSubnetName -AddressPrefix $dbSubnetIpRange
-$mngSubnet = New-AzVirtualNetworkSubnetConfig -Name $mngSubnetName -AddressPrefix $mngSubnetIpRange
+$webSubnet = New-AzVirtualNetworkSubnetConfig -Name $webSubnetName -AddressPrefix $webSubnetIpRange -NetworkSecurityGroup $webNsg
+$dbSubnet = New-AzVirtualNetworkSubnetConfig -Name $dbSubnetName -AddressPrefix $dbSubnetIpRange -NetworkSecurityGroup $dbNsg
+$mngSubnet = New-AzVirtualNetworkSubnetConfig -Name $mngSubnetName -AddressPrefix $mngSubnetIpRange -NetworkSecurityGroup $mngNsg
 New-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName -Location $location -AddressPrefix $vnetAddressPrefix -Subnet $webSubnet,$dbSubnet,$mngSubnet
