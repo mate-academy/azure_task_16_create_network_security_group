@@ -21,7 +21,7 @@ $webRule = New-AzNetworkSecurityRuleConfig -Name http-rule `
     -Direction Inbound -Priority 100 -SourceAddressPrefix Internet `
     -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 80,443
 
-$webSG = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name "$webSubnetName-nsg" -SecurityRules $webRule
+$webSG = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name $webSubnetName -SecurityRules $webRule
 
 Write-Host "Creating mngSubnet network security group..."
 # Write your code for creation of management NSG here -> 
@@ -30,10 +30,10 @@ $sshRule = New-AzNetworkSecurityRuleConfig -Name ssh-rule `
     -Direction Inbound -Priority 100 -SourceAddressPrefix Internet `
     -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22
 
-$mngSG = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name "$mngSubnetName-nsg" -SecurityRules $sshRule
+$mngSG = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name $mngSubnetName -SecurityRules $sshRule
 
 Write-Host "Creating dbSubnet network security group..."
-$dbSG = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name "$dbSubnetName-nsg"
+$dbSG = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name $dbSubnetName
 
 Write-Host "Creating a virtual network ..."
 
