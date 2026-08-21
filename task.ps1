@@ -34,6 +34,18 @@ $webInternetRule = New-AzNetworkSecurityRuleConfig `
     -DestinationAddressPrefix * `
     -DestinationPortRange 80,443
 
+$webVnetRule = New-AzNetworkSecurityRuleConfig `
+    -Name "Allow-VNet" `
+    -Description "Allow traffic from virtual network" `
+    -Access Allow `
+    -Protocol * `
+    -Direction Inbound `
+    -Priority 200 `
+    -SourceAddressPrefix "10.20.30.0/24" `
+    -SourcePortRange * `
+    -DestinationAddressPrefix * `
+    -DestinationPortRange *
+
 $webNsg = New-AzNetworkSecurityGroup `
     -Name $webSubnetName `
     -ResourceGroupName $resourceGroupName `
@@ -55,17 +67,17 @@ $mngInternetRule = New-AzNetworkSecurityRuleConfig `
     -DestinationAddressPrefix * `
     -DestinationPortRange 22
 
-# $mngVnetRule = New-AzNetworkSecurityRuleConfig `
-#     -Name "Allow-VNet" `
-#     -Description "Allow traffic from virtual network" `
-#     -Access Allow `
-#     -Protocol * `
-#     -Direction Inbound `
-#     -Priority 200 `
-#     -SourceAddressPrefix 10.20.30.0/24 `
-#     -SourcePortRange * `
-#     -DestinationAddressPrefix * `
-#     -DestinationPortRange *
+$mngVnetRule = New-AzNetworkSecurityRuleConfig `
+    -Name "Allow-VNet" `
+    -Description "Allow traffic from virtual network" `
+    -Access Allow `
+    -Protocol * `
+    -Direction Inbound `
+    -Priority 200 `
+    -SourceAddressPrefix 10.20.30.0/24 `
+    -SourcePortRange * `
+    -DestinationAddressPrefix * `
+    -DestinationPortRange *
 
 $mngNsg = New-AzNetworkSecurityGroup `
     -Name $mngSubnetName `
