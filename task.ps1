@@ -22,7 +22,7 @@ New-AzResourceGroup `
 
 Write-Host "Creating web network security group..."
 
-$webRule = New-AzNetworkSecurityRuleConfig `
+$webInternetRule = New-AzNetworkSecurityRuleConfig `
     -Name "Allow-Web" `
     -Description "Allow HTTP and HTTPS from Internet" `
     -Access Allow `
@@ -38,12 +38,12 @@ $webNsg = New-AzNetworkSecurityGroup `
     -Name $webSubnetName `
     -ResourceGroupName $resourceGroupName `
     -Location $location `
-    -SecurityRules $webRule
+    -SecurityRules $webInternetRule
 
 
-Write-Host "Creating management network security group..."
+Write-Host "Creating mngSubnet network security group..."
 
-$mngSshRule = New-AzNetworkSecurityRuleConfig `
+$mngInternetRule = New-AzNetworkSecurityRuleConfig `
     -Name "Allow-SSH" `
     -Description "Allow SSH from Internet" `
     -Access Allow `
@@ -55,19 +55,44 @@ $mngSshRule = New-AzNetworkSecurityRuleConfig `
     -DestinationAddressPrefix * `
     -DestinationPortRange 22
 
+# $mngVnetRule = New-AzNetworkSecurityRuleConfig `
+#     -Name "Allow-VNet" `
+#     -Description "Allow traffic from virtual network" `
+#     -Access Allow `
+#     -Protocol * `
+#     -Direction Inbound `
+#     -Priority 200 `
+#     -SourceAddressPrefix 10.20.30.0/24 `
+#     -SourcePortRange * `
+#     -DestinationAddressPrefix * `
+#     -DestinationPortRange *
+
 $mngNsg = New-AzNetworkSecurityGroup `
     -Name $mngSubnetName `
     -ResourceGroupName $resourceGroupName `
     -Location $location `
-    -SecurityRules $mngSshRule
+    -SecurityRules $mngInternetRule, $mngVnetRule
 
 
-Write-Host "Creating database network security group..."
+Write-Host "Creating dbSubnet network security group..."
+
+$dbVnetRule = New-AzNetworkSecurityRuleConfig `
+    -Name "Allow-VNet" `
+    -Description "Allow traffic from virtual network" `
+    -Access Allow `
+    -Protocol * `
+    -Direction Inbound `
+    -Priority 200 `
+    -SourceAddressPrefix 10.20.30.0/24 `
+    -SourcePortRange * `
+    -DestinationAddressPrefix * `
+    -DestinationPortRange *
 
 $dbNsg = New-AzNetworkSecurityGroup `
     -Name $dbSubnetName `
     -ResourceGroupName $resourceGroupName `
-    -Location $location
+    -Location $location `
+    -SecurityRules $dbVnetRule
 
 
 Write-Host "Creating a virtual network ..."
