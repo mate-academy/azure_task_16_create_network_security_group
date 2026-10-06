@@ -15,6 +15,18 @@ Write-Host "Creating a resource group $resourceGroupName ..."
 New-AzResourceGroup -Name $resourceGroupName -Location $location
 
 Write-Host "Creating web network security group..."
+$vnetRule = New-AzNetworkSecurityRuleConfig `
+    -Name "AllowVNetInbound" `
+    -Description "Allow VNet traffic" `
+    -Access Allow `
+    -Protocol * `
+    -Direction Inbound `
+    -Priority 200 `
+    -SourceAddressPrefix "10.20.30.0/24" `
+    -SourcePortRange * `
+    -DestinationAddressPrefix * `
+    -DestinationPortRange *
+
 $web_rule = New-AzNetworkSecurityRuleConfig `
     -Name "AllowHTTPandHTTPS" `
     -Description "Allow HTTP and HTTPS" `
@@ -30,8 +42,8 @@ $web_rule = New-AzNetworkSecurityRuleConfig `
 $webNSG = New-AzNetworkSecurityGroup `
     -ResourceGroupName $resourceGroupName `
     -Location $location `
-    -Name "$webSubnetName-nsg" `
-    -SecurityRules $web_rule
+    -Name $webSubnetName `
+    -SecurityRules $web_rule, $vnetRule
 
 
 # 2. management NSG (Рівно 1 правило на порт 22)
@@ -51,8 +63,8 @@ $mng_rule = New-AzNetworkSecurityRuleConfig `
 $mngNSG = New-AzNetworkSecurityGroup `
     -ResourceGroupName $resourceGroupName `
     -Location $location `
-    -Name "$mngSubnetName-nsg" `
-    -SecurityRules $mng_rule
+    -Name $mngSubnetName `
+    -SecurityRules $mng_rule, $vnetRule
 
 
 # 3. database NSG (0 правил, передаємо порожній масив)
@@ -60,9 +72,9 @@ Write-Host "Creating database network security group..."
 $dbNSG = New-AzNetworkSecurityGroup `
     -ResourceGroupName $resourceGroupName `
     -Location $location `
-    -Name "$dbSubnetName-nsg"
+    -Name $dbSubnetName
+    -SecurityRules $vnetRule
 
-    
 Write-Host "Creating a virtual network ..."
 $webSubnet = New-AzVirtualNetworkSubnetConfig -Name $webSubnetName -AddressPrefix $webSubnetIpRange -NetworkSecurityGroup $webNSG
 $dbSubnet  = New-AzVirtualNetworkSubnetConfig -Name $dbSubnetName  -AddressPrefix $dbSubnetIpRange  -NetworkSecurityGroup $dbNSG
