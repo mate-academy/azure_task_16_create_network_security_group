@@ -72,7 +72,7 @@ Write-Host "Creating database network security group..."
 $dbNSG = New-AzNetworkSecurityGroup `
     -ResourceGroupName $resourceGroupName `
     -Location $location `
-    -Name $dbSubnetName
+    -Name $dbSubnetName `
     -SecurityRules $vnetRule
 
 Write-Host "Creating a virtual network ..."
