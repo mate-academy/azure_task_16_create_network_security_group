@@ -18,7 +18,7 @@ Before completing any task in the module, make sure that you followed all the st
     pwsh
     ```
 
-5. Install [Azure module for PowerShell 7](https://learn.microsoft.com/en-us/powershell/azure/install-azure-powershell?view=azps-11.3.0): 
+5. Install [Azure module for PowerShell 7](https://learn.microsoft.com/en-us/powershell/azure/install-azure-powershell?view=azps-11.3.0):
     ```
     Install-Module -Name Az -Repository PSGallery -Force
     ```
